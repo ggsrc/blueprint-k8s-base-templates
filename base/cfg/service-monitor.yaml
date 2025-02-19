@@ -1,0 +1,5 @@
+varReference:
+  - path: spec/selector/matchLabels
+    kind: ServiceMonitor
+  - path: spec/namespaceSelector/matchNames
+    kind: ServiceMonitor

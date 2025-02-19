@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: APP_NAME
+spec:
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: APP_NAME
+  template:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+      labels:
+        app: APP_NAME
+        app.kubernetes.io/part-of: TBD
+    spec:
+      serviceAccountName: APP_NAME
+      containers:
+        - image: APP_IMAGE
+          envFrom:
+            - configMapRef:
+                name: APP_NAME
+          imagePullPolicy: Always
+          name: main
+          ports:
+            - containerPort: 3000
+              name: http-rest
+            - containerPort: 8080
+              name: http
+            - containerPort: 9090
+              name: grpc
+            - containerPort: 8080
+              name: liveness
+            - containerPort: 8080
+              name: readiness
+            - containerPort: 4014
+              name: http-prometheus
+          livenessProbe:
+            httpGet:
+              path: /health/alive
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 10m
+              memory: 10Mi

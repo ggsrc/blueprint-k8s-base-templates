@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: app-ns
+
+resources:
+  - ../../base
+
+commonLabels:
+  app: test-app
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: test-app
+    target:
+      name: APP_NAME
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "2"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "4"
+    target:
+      kind: Deployment
+      name: APP_NAME
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - behavior: merge
+    literals:
+      - ENV_VAR=test
+    name: APP_NAME
+
+images:
+  - name: APP_IMAGE
+    newName: nginx
+    newTag: alpine

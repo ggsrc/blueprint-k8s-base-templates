@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - config-map.yaml
+  - deployment.yaml
+  - horizontal-pod-autoscaler.yaml
+  - service.yaml
+  - virtual-service.yaml
+  - service-account.yaml
+  - service-monitor.yaml
+
+vars:
+  - name: SERVICE_NAME
+    objref:
+      kind: Service
+      version: v1
+      name: APP_NAME
+    fieldref:
+      fieldpath: metadata.name
+  - name: SERVICE_NAMESPACE
+    objref:
+      kind: Service
+      version: v1
+      name: APP_NAME
+    fieldref:
+      fieldpath: metadata.namespace
+
+configurations:
+  - cfg/virtual-service.yaml
+  - cfg/service-monitor.yaml

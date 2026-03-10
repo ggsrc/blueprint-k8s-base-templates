@@ -16,8 +16,16 @@ spec:
         app.kubernetes.io/part-of: TBD
     spec:
       serviceAccountName: APP_NAME
+      securityContext:
+        runAsNonRoot: true
       containers:
         - image: APP_IMAGE
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           envFrom:
             - configMapRef:
                 name: APP_NAME

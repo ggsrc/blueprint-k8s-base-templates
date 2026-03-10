@@ -16,59 +16,29 @@ This repository offers a collection of reusable resources designed with best pra
 
 ## Usage
 
-These base templates are designed to be extended using Kustomize overlays. Follow these steps to integrate them into your deployment pipeline:
+Reference the base templates remotely in your `kustomization.yaml` using a pinned version tag:
 
-1. **Clone the Repository**
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: my-app-namespace
 
-   ```bash
-   git clone https://github.com/your-org/blueprint-k8s-base-templates.git
-   cd blueprint-k8s-base-templates
-   ```
+resources:
+  - github.com/ggsrc/blueprint-k8s-base-templates//base?ref=v1.1.1
 
-2. **Create an Overlay**
+commonLabels:
+  app: my-app
 
-   In your overlay directory (e.g., `overlays/my-app`), create a `kustomization.yaml` that references the base templates. For example:
+patches:
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: my-app
+    target:
+      name: APP_NAME
+```
 
-   ```yaml
-   apiVersion: kustomize.config.k8s.io/v1beta1
-   kind: Kustomization
-   namespace: my-app-namespace
-
-   resources:
-     - ../../base
-
-   commonLabels:
-     app: my-app
-
-   patches:
-     - patch: |-
-         - op: replace
-           path: /metadata/name
-           value: my-app
-       target:
-         name: APP_NAME
-     - patch: |-
-         - op: replace
-           path: /spec/template/spec/containers/0/resources/requests/cpu
-           value: "2"
-         - op: replace
-           path: /spec/template/spec/containers/0/resources/limits/cpu
-           value: "4"
-       target:
-         kind: Deployment
-         name: APP_NAME
-
-   generatorOptions:
-     disableNameSuffixHash: true
-   ```
-
-3. **Deploy to Kubernetes**
-
-   Use `kubectl` along with Kustomize to deploy your configuration:
-
-   ```bash
-   kubectl apply -k overlays/my-app
-   ```
+Always pin to a specific version tag (e.g. `?ref=v1.1.1`) to avoid unexpected changes.
 
 ## Customization
 
@@ -80,13 +50,51 @@ These base templates are designed to be extended using Kustomize overlays. Follo
   - gRPC: 9090
   - Prometheus Metrics: 4014
 
+## Security Context (v1.1.1+)
+
+The deployment template enforces pod-level security by default:
+
+```yaml
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532      # distroless nonroot user
+  runAsGroup: 65532
+  fsGroup: 65532
+containers:
+  - securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: [ALL]
+```
+
+**Note:** Services that need a writable filesystem (e.g. Node.js) must add an emptyDir volume for `/tmp`:
+
+```yaml
+- op: add
+  path: /spec/template/spec/volumes
+  value: [{name: tmp, emptyDir: {}}]
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts
+  value: [{name: tmp, mountPath: /tmp}]
+```
+
+## Versions
+
+| Tag | Changes |
+|-----|---------|
+| v1.0.0 | Initial base templates |
+| v1.1.0 | Add `runAsNonRoot: true` (pod securityContext) |
+| v1.1.1 | Add `runAsUser/runAsGroup/fsGroup: 65532`, container securityContext |
+
 ## Features
 
-- **Auto-Scaling:** The Horizontal Pod Autoscaler adjusts replicas based on your application's CPU and memory utilization.
-- **Resilience:** Liveness and readiness probes ensure the health of your application by periodically checking its status.
-- **Observability:** The integrated ServiceMonitor makes it easy to connect to Prometheus for monitoring purposes.
-- **Traffic Management:** Istio VirtualService provides advanced routing capabilities, including retries and fault tolerance.
-- **Modularity:** Base templates are designed to be easily extended and customized with overlay configurations.
+- **Security:** Pod and container security contexts enforced by default (non-root, read-only filesystem, dropped capabilities)
+- **Auto-Scaling:** HPA adjusts replicas based on CPU and memory utilization
+- **Resilience:** Liveness and readiness probes on port 8080
+- **Observability:** ServiceMonitor for Prometheus integration
+- **Traffic Management:** Istio VirtualService with routing and retries
+- **Modularity:** Designed for remote references with version pinning
 
 ## Requirements
 

@@ -15,6 +15,9 @@ spec:
         app: APP_NAME
         app.kubernetes.io/part-of: TBD
     spec:
+      # Total time allowed for preStop + in-flight request completion.
+      # preStop sleeps 5s for endpoint propagation, leaving 25s for graceful drain.
+      terminationGracePeriodSeconds: 30
       serviceAccountName: APP_NAME
       securityContext:
         runAsNonRoot: true
@@ -29,6 +32,13 @@ spec:
             capabilities:
               drop:
                 - ALL
+          # Sleep 5s before SIGTERM so the endpoints controller and Istio
+          # Envoy can remove this pod from the load balancer, preventing
+          # in-flight request cancellations during rolling updates.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
           envFrom:
             - configMapRef:
                 name: APP_NAME

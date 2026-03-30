@@ -16,8 +16,9 @@ spec:
         app.kubernetes.io/part-of: TBD
     spec:
       # Total time allowed for preStop + in-flight request completion.
-      # preStop sleeps 5s for endpoint propagation, leaving 25s for graceful drain.
-      terminationGracePeriodSeconds: 30
+      # preStop sleeps 5s for endpoint propagation, leaving 35s for graceful drain.
+      # Must exceed preStop (5s) + longest request timeout (gRPC perTryTimeout: 30s).
+      terminationGracePeriodSeconds: 40
       serviceAccountName: APP_NAME
       securityContext:
         runAsNonRoot: true
